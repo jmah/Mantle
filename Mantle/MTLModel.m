@@ -291,10 +291,19 @@ static BOOL MTLValidateAndSetValue(id obj, NSString *key, id value, BOOL forceUp
 #pragma mark NSObject
 
 - (NSString *)description {
-	NSDictionary *permanentProperties = [self dictionaryWithValuesForKeys:self.class.permanentPropertyKeys.allObjects];
-
-	return [NSString stringWithFormat:@"<%@: %p> %@", self.class, self, permanentProperties];
+	return [self descriptionWithLocale:nil];
 }
+
+- (NSString *)descriptionWithLocale:(id)locale {
+	return [self descriptionWithLocale:locale indent:0];
+}
+
+- (NSString *)descriptionWithLocale:(id)locale indent:(NSUInteger)level {
+	NSDictionary *permanentProperties = [self dictionaryWithValuesForKeys:self.class.permanentPropertyKeys.allObjects];
+	return [NSString stringWithFormat:@"<%@: %p> %@", self.class, self, [permanentProperties descriptionWithLocale:locale indent:level]];
+}
+
+- (BOOL)isNSDictionary__ { return YES; }
 
 - (NSUInteger)hash {
 	NSUInteger value = 0;
