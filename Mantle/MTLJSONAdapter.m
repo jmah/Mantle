@@ -74,7 +74,7 @@ static NSString * const MTLJSONAdapterThrownExceptionErrorKey = @"MTLJSONAdapter
 #pragma mark Convenience methods
 
 + (id)modelOfClass:(Class)modelClass fromJSONDictionary:(NSDictionary *)JSONDictionary error:(NSError **)error {
-	MTLJSONAdapter *adapter = [[self alloc] initWithModelClass:modelClass];
+	MTLJSONAdapter *adapter = [self sharedAdapterForModelClass:modelClass];
 
 	return [adapter modelFromJSONDictionary:JSONDictionary error:error];
 }
@@ -104,7 +104,7 @@ static NSString * const MTLJSONAdapterThrownExceptionErrorKey = @"MTLJSONAdapter
 }
 
 + (NSDictionary *)JSONDictionaryFromModel:(id<MTLJSONSerializing>)model error:(NSError **)error {
-	MTLJSONAdapter *adapter = [[self alloc] initWithModelClass:model.class];
+	MTLJSONAdapter *adapter = [self sharedAdapterForModelClass:model.class];
 
 	return [adapter JSONDictionaryFromModel:model error:error];
 }
@@ -125,6 +125,21 @@ static NSString * const MTLJSONAdapterThrownExceptionErrorKey = @"MTLJSONAdapter
 }
 
 #pragma mark Lifecycle
+
++ (instancetype)sharedAdapterForModelClass:(Class)modelClass {
+	NSParameterAssert(modelClass != nil);
+
+	// Use 'self' as the key to ensure an adapter of the receiving class.
+	const void *cachedTransformerKey = (__bridge void *)self;
+	id transformer = objc_getAssociatedObject(modelClass, cachedTransformerKey);
+	if (!transformer) {
+		transformer = [[self alloc] initWithModelClass:modelClass];
+		// There is a race here, but it results in possibly having unnecessary
+		// extra instances without any correctness issue.
+		objc_setAssociatedObject(modelClass, cachedTransformerKey, transformer, OBJC_ASSOCIATION_RETAIN);
+	}
+	return transformer;
+}
 
 - (id)init {
 	NSAssert(NO, @"%@ must be initialized with a model class", self.class);
@@ -425,7 +440,7 @@ static NSString * const MTLJSONAdapterThrownExceptionErrorKey = @"MTLJSONAdapter
 
 		if (result != nil) return result;
 
-		result = [[self.class alloc] initWithModelClass:modelClass];
+		result = [self.class sharedAdapterForModelClass:modelClass];
 
 		if (result != nil) {
 			[self.JSONAdaptersByModelClass setObject:result forKey:modelClass];
@@ -490,7 +505,7 @@ static NSString * const MTLJSONAdapterThrownExceptionErrorKey = @"MTLJSONAdapter
 			}
 
 			if (!adapter) {
-				adapter = [[self alloc] initWithModelClass:modelClass];
+				adapter = [self sharedAdapterForModelClass:modelClass];
 			}
 			id model = [adapter modelFromJSONDictionary:JSONDictionary error:error];
 			if (model == nil) {
@@ -517,7 +532,7 @@ static NSString * const MTLJSONAdapterThrownExceptionErrorKey = @"MTLJSONAdapter
 			}
 
 			if (!adapter) {
-				adapter = [[self alloc] initWithModelClass:modelClass];
+				adapter = [self sharedAdapterForModelClass:modelClass];
 			}
 			NSDictionary *result = [adapter JSONDictionaryFromModel:model error:error];
 			if (result == nil) {

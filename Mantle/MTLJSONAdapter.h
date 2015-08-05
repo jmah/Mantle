@@ -146,6 +146,16 @@ extern const NSInteger MTLJSONAdapterErrorInvalidJSONMapping;
 /// model.
 + (NSArray *)JSONArrayFromModels:(NSArray *)models error:(NSError **)error;
 
+/// Returns a possibly-shared adapter instance for a given model class. Using a
+/// shared adapter can avoid repeated parsing of the model's JSON mapping.
+///
+/// modelClass - The MTLModel subclass to attempt to parse from the JSON and
+///              back. This class must conform to <MTLJSONSerializing>. This
+///              argument must not be nil.
+///
+/// Returns an initialized adapter.
++ (instancetype)sharedAdapterForModelClass:(Class)modelClass;
+
 /// Initializes the receiver with a given model class.
 ///
 /// modelClass - The MTLModel subclass to attempt to parse from the JSON and
